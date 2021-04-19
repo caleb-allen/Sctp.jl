@@ -1,0 +1,13 @@
+name = "Sctp"
+uuid = "874a04b2-df7c-4631-ae15-377be18a567c"
+authors = ["Caleb Allen <mail@caleb.dev> and contributors"]
+version = "0.1.0"
+
+[compat]
+julia = "1"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
