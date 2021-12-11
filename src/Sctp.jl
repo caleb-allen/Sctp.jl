@@ -6,34 +6,37 @@
 #https://man7.org/linux/man-pages/man2/bind.2.html
 module Sctp
 
-export SCTPSocket, sctp_init, sctp_finish, close, listen, connect, sendv, recvv, getsockopt, setsockopt, remote_udp_encaps_port, remote_udp_encaps_port!
+include("UsrSctp.jl")
+using .UsrSctp
+include("defines.jl")
 # using Sockets
-import Sockets: IPv4, @ip_str
+import Sockets: IPv4, IPv6, @ip_str
 export IPv4, @ip_str
 export SockaddrIn
+export sctp_init, SctpSocket
 # import Base.close
 
-include("defines.jl")
 
 """
     Every application has to start with usrsctp_init(). This function calls sctp_init() and reserves the memory necessary to administer the data transfer.
     The flag `use_udp` determines whether to use SCTP over UDP. Defaults to false
 """
 function sctp_init(use_udp=false)
-  udp_port = use_udp ? 9899 : 0
-  ccall((:usrsctp_init, "libusrsctp"), Cvoid, (Cushort,), udp_port)
+    udp_port = use_udp ? 9899 : 0
+    UsrSctp.usrsctp_init(udp_port, Ptr{Cvoid}(), Ptr{Cvoid}())
 end
 
 function sctp_finish()
   # @show 
+  
   ccall((:usrsctp_finish, "libusrsctp"), Cint, ())
 end
 
-struct SCTPSocket
-  ptr :: Ptr{Cvoid}
+struct SctpSocket
+  ptr :: Ptr{UsrSctp.Socket}
 end
 
-function SCTPSocket end
+function SctpSocket end
 
 # function SCTPSocket(
 #     domain :: Cint,
@@ -42,43 +45,45 @@ function SCTPSocket end
 #     receive_cb :: Ptr{Cvoid},
 #     send_cb :: Ptr{Cvoid},
 #     sb_threshold :: Cuint,
-function SCTPSocket()
-  res = ccall((:usrsctp_socket, "libusrsctp"), Ptr{Cvoid},
-        # (Cint, Cint, Cint, Ptr{Cvoid}, Ptr{Cvoid}, Cuint, Ptr{Cvoid}),
-        (Cint, Cint, Cint),
-        AF_INET, SOCK_SEQPACKET, SOL_SCTP)
-  if res === nothing
-    error("socket was not created")
-  else
-    return SCTPSocket(res)
-  end
+function SctpSocket()
+    ptr = UsrSctp.usrsctp_socket(
+        AF_INET6,
+        SOCK_SEQPACKET,
+        SOL_SCTP,
+        Ptr{Cvoid}(), #receive_cb
+        Ptr{Cvoid}(), #send_cb
+        0, # sb_threshold
+        Ptr{Cvoid}()#ulp_info
+    )
+    if ptr === nothing # TODO if ptr == 0
+        error("socket was not created")
+    end
+    return SctpSocket(ptr)
 end
 
 
-function SCTPSocket(ptr :: Union{Ptr{}, Nothing})
+function SctpSocket(ptr :: Union{Ptr{}, Nothing})
   if ptr === nothing
     error("socket was not created")
   else
-    return SCTPSocket(ptr)
+    return SctpSocket(ptr)
   end
 
 end
-
-function Base.bind(so :: SCTPSocket,
+function Base.bind(so :: SctpSocket,
                   addr :: IPv4,
                   port :: Integer = 0) # default 0, allow OS to choose ephemeral port
-  p :: Cushort = UInt16(port)
-  sockaddr = SockaddrIn(addr, p)
-  return Base.bind(so, sockaddr)
+    p :: Cushort = UInt16(port)
+    # sock_addr = UsrSctp.in_addr()
+    sockaddr = UsrSctp.sockaddr_in(AF_INET,
+                                hton(p),
+                                UsrSctp.in_addr(hton(addr.host)),
+                                (Cuchar(0) for _ in 1:8) |> collect |> Tuple)
+    addrlen = sizeof(sockaddr)
+    UsrSctp.usrsctp_bind(so.ptr, Ref(sockaddr), addrlen)                     
 end
 
-function Base.bind(so :: SCTPSocket,
-                  sockaddr :: SockaddrIn)
-  addrlen = sizeof(sockaddr)
-  ccall((:usrsctp_bind, "libusrsctp"), Cint, (Ptr{Cvoid}, Ref{SockaddrIn}, Cint), so.ptr, sockaddr, addrlen)
-end
-
-
+#=
 function connect(so :: SCTPSocket,
                 sockaddr :: SockaddrIn)
   addrlen = sizeof(sockaddr)
@@ -232,6 +237,8 @@ function setsockopt(so :: SCTPSocket,
   end
   # result = optval.x[1:optlen.x]
 end
+
+=#
 
 end
 

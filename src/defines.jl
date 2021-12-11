@@ -11,6 +11,8 @@ else
     10
 end
 
+const NULL = 0
+
 # /* Socket types. */
 const SOCK_STREAM = 1 #  stream (connection) socket	
 const SOCK_DGRAM = 2 #  datagram (conn.less) socket	
@@ -31,43 +33,43 @@ const SOL_RAW = 255
 
 const SaFamily = Cint
 
-struct InAddr
-  s_addr :: Cuint # address in network byte order
-end
+# struct InAddr
+#   s_addr :: Cuint # address in network byte order
+# end
 
-InAddr(address :: IPv4) = InAddr(hton(address.host))
+# InAddr(address :: IPv4) = InAddr(hton(address.host))
 
-abstract type SockAddr end
+# abstract type SockAddr end
 
-struct SockaddrIn <: SockAddr
-  sin_family :: Cint # AF_INET
-  sin_port :: Cushort # port in network byte order
-  sin_addr :: InAddr # internet address
-end
-function SockaddrIn(address :: IPv4, port :: Integer)
-  p = UInt16(port)
-  SockaddrIn(AF_INET,
-             hton(p),
-             InAddr(address))
-end
-const SctpAssocT = Cuint
+# struct SockaddrIn <: SockAddr
+#   sin_family :: Cint # AF_INET
+#   sin_port :: Cushort # port in network byte order
+#   sin_addr :: InAddr # internet address
+# end
+# function SockaddrIn(address :: IPv4, port :: Integer)
+#   p = UInt16(port)
+#   SockaddrIn(AF_INET,
+#              hton(p),
+#              InAddr(address))
+# end
+# const SctpAssocT = Cuint
 
-struct SctpSndinfo
-  # the stream number to which the application wishes to send this message
-  snd_sid :: UInt16
-  # any of the following flags and is composed of bitwise OR of these values
-  snd_flags :: UInt16
-  snd_ppid :: UInt32
-  snd_context :: UInt32
-  snd_assoc_id :: SctpAssocT 
-end
+# struct SctpSndinfo
+#   # the stream number to which the application wishes to send this message
+#   snd_sid :: UInt16
+#   # any of the following flags and is composed of bitwise OR of these values
+#   snd_flags :: UInt16
+#   snd_ppid :: UInt32
+#   snd_context :: UInt32
+#   snd_assoc_id :: SctpAssocT 
+# end
 
-struct SctpUdpencaps
-  # sue_address :: SockaddrStorage
-  sue_address :: SockaddrIn
-  sue_assoc_id :: UInt32
-  sue_port :: UInt16
-end
+# struct SctpUdpencaps
+#   # sue_address :: SockaddrStorage
+#   sue_address :: SockaddrIn
+#   sue_assoc_id :: UInt32
+#   sue_port :: UInt16
+# end
 
 
 #  Flags that go into the sinfo->sinfo_flags field 

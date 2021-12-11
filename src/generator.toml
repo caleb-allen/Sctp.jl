@@ -1,0 +1,6 @@
+[general]
+library_name = "usrsctplib"
+output_file_path = "./UsrSctp.jl"
+module_name = "UsrSctp"
+jll_pkg_name = "Usrsctp_jll"
+export_symbol_prefixes = ["Sctp", "sctp_"]
